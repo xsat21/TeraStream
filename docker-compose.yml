@@ -1,0 +1,43 @@
+services:
+  terastream:
+    image: terastream:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_ADS_ENABLED: "${NEXT_PUBLIC_ADS_ENABLED:-false}"
+    ports:
+      - "10.40.40.242:8082:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+      NODE_OPTIONS: "--max-old-space-size=256"
+    user: "1000:1000"
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+      - /app/.next/cache:rw,noexec,nosuid,nodev,size=16m,uid=1000,gid=1000,mode=0700
+    mem_limit: 512m
+    mem_reservation: 128m
+    cpus: 1.0
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "node", "/app/healthcheck.mjs"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"

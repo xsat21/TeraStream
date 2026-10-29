@@ -22,11 +22,60 @@ npm run lint
 npm run typecheck       # generates Next.js route types, then checks TypeScript
 npm test                # URL, SSRF transport, API and component tests
 npm run build
-npm start              # production server, after building
 # Or run all checks with npm run check
 ```
 
+For a local production launch with standalone output, copy its static assets and run the generated server (Docker does these copies automatically):
+
+```sh
+cp -r public .next/standalone/
+cp -r .next/static .next/standalone/.next/
+HOSTNAME=127.0.0.1 PORT=3000 NEXT_TELEMETRY_DISABLED=1 node .next/standalone/server.js
+```
+
+The existing `npm start` script remains the conventional Next.js CLI command; Next.js recommends the generated `server.js` for standalone deployment.
+
 CI runs a frozen `npm ci` followed by `npm run check` on pull requests and pushes to `main`. Package versions are pinned and the lockfile is committed. See [version verification](docs/dependencies.md) for registry evidence and compatibility choices.
+
+## Deploy with Coolify 4.5.3 (LAN only)
+
+Target: Debian 13 on Proxmox VM **260**, LAN IP **10.40.40.242**, 3 GB RAM. TeraStream uses **8082**; PixForge stays on **8081**, Coolify on **8000**, and its proxy keeps **80/443/8080**. No domain, Cloudflare Tunnel, database, external service or persistent volume is needed. The mock provider remains the only provider; live TeraBox playback/downloads are not verified or enabled.
+
+After merging the deployment PR into `main`:
+
+1. In Coolify, add an application from the public repository `https://github.com/xsat21/TeraStream`, select the VM's destination, and choose **Docker Compose** as the build strategy (not Nixpacks or a single Dockerfile application).
+2. Set branch **`main`**, base directory **`/`**, and Compose file **`/docker-compose.yml`**. Leave service domains empty and do not add a proxy route or generated public domain. Coolify still needs repository read access and outbound access to Docker Hub and npm during builds.
+3. Inspect the resolved Compose configuration: service `terastream` must retain **`10.40.40.242:8082:3000`**. Container port is **3000**, host port is **8082**; do not add another host-port mapping in Coolify. Keep the configured health check and security/resource settings. Do not mount the Docker socket or enable privileged mode. Review the generated config after any Coolify UI override.
+4. No secrets are required. Leave `NEXT_PUBLIC_ADS_ENABLED` unset (or `false`). It is a **build argument**, so changes require a rebuild; `true` enables only the isolated ad placeholder, never an ad network. Runtime Node settings and disabled telemetry are already in Compose. Do not upload `.env.local` or credentials to Git.
+5. Deploy and wait for the `terastream` container to become **healthy**. The check calls `/api/health` locally using Node, every 30 seconds with a 30-second startup grace period, a 5-second timeout and three retries. A healthy result establishes app responsiveness, not TeraBox connectivity or streaming capability.
+6. From an allowed LAN client, access **http://10.40.40.242:8082**. Confirm the demo labels, URL error state and mock metadata; the API and player must not imply real media works. Also check `http://10.40.40.242:8082/api/health` returns `{"status":"ok"}`. Never submit a private share as a deployment test.
+
+The Dockerfile pins Node **24.19.0**, installs the unchanged lockfile using `npm ci`, runs the existing Webpack production build, and copies only standalone output, static/public assets, the health script and MIT license to the runtime stage. The service listens on `0.0.0.0:3000` **inside** the container as UID/GID **1000:1000**, with a read-only root filesystem, no capabilities and no new privileges. Only bounded `/tmp` and Next.js cache tmpfs mounts are writable; both are discarded on container removal. They contain no user-media pipeline. No database or volume is added. Reassess these mounts if future work adds ISR, image optimization or uploads.
+
+**Firewall:** binding to the LAN IP does **not** replace firewall rules. Restrict TCP **8082** to your approved trusted LAN CIDR in Proxmox/VM firewall policy; the IP alone does not reveal your subnet mask. Docker-published ports may bypass ordinary UFW/INPUT rules, so enforce restrictions at Proxmox and/or Docker-aware forwarding rules appropriate to the host's nftables/iptables backend. Verify access from allowed and disallowed networks while preserving existing SSH, Coolify and PixForge access. No public router port forwarding is required. This is HTTP on a trusted LAN; if exposing it beyond that LAN, first design TLS, access controls and rate limits separately.
+
+**Resources:** Compose caps this container at **512 MiB**, one CPU and 128 processes, with a 128 MiB memory reservation and a **256 MiB V8 old-space** limit. The heap limit is not a total-RSS limit. Tmpfs, native allocations and page cache also count against memory. Logs rotate at 5 MiB × two files; application code does not log submitted share URLs. Check host/proxy logs separately and do not enable request-body logging. These are starting limits for the mock app, not a capacity guarantee for Coolify + PixForge on 3 GB. Watch `docker stats`, VM free memory, OOM events and disk usage after deployment.
+
+Builds need more memory/disk than the runtime. The builder uses a 1024 MiB V8 old-space limit **per Node process**; Compose runtime limits do not cap the build, and several build workers may run. On a busy 3 GB VM, avoid concurrent deployments and check `free -h`, `df -h` and `docker system df`. Keep several GB free for image layers and build cache. If builds still exceed available RAM, a future improvement is to build on a **GitHub-hosted runner**, publish a versioned image to GHCR, and configure Coolify to pull that immutable image instead of building locally. That separate workflow would need scoped package-publishing permissions and optional private-registry credentials supplied securely; do not add privileged/self-hosted runners. Never prune unrelated PixForge/Coolify images or volumes blindly.
+
+**Troubleshooting:**
+
+- `address already in use`: inspect `ss -ltnp` and `docker ps --format 'table {{.Names}}\t{{.Ports}}'` on the VM. Resolve the owner of **8082**; do not stop PixForge or repurpose the proxy/dashboard ports.
+- `cannot assign requested address`: confirm `10.40.40.242` is assigned to the deployment host. The production Compose file deliberately fails on a machine without that IP; use a separate local override for tests instead of changing the target binding.
+- Unhealthy/restarting container: inspect Coolify logs, `/api/health`, and `docker inspect --format '{{json .State.Health}}' <container>`. Check `OOMKilled`, memory limits and disk space. A missing public domain is not an error for this direct LAN-port deployment.
+- Page loads without styles/scripts: verify the image was built with `.next/static` copied and the browser can reach its same-origin assets. Existing security headers, CSP, allowlists and SSRF protection remain unchanged.
+
+For direct Compose administration from a checkout **on the target VM** (Coolify users should normally use its Deploy action):
+
+```sh
+docker compose config --quiet
+docker compose up -d --build --wait --wait-timeout 120
+docker compose ps
+docker compose logs --tail=50 terastream
+docker compose exec -T terastream node /app/healthcheck.mjs
+```
+
+Do not run a second Compose deployment alongside the Coolify-managed instance on the same port. Deployment checks performed in the development environment are recorded in [Docker validation](docs/coolify-validation.md); they do not establish successful deployment on VM 260.
 
 ## What is included
 
