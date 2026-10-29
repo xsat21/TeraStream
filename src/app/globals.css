@@ -59,6 +59,9 @@ input::placeholder { color: var(--muted); opacity: .8; }
 .player-placeholder h2 { font-size: 16px; font-weight: 500; margin: 0 0 9px; }
 .player-placeholder p { font-size: 11px; line-height: 1.7; color: #a2b8b2; max-width: 340px; margin: 0; }
 .player-note { color: #9baea8; margin-top: 23px; font-size: 9px; }
+.video-player { background: #101f22; color: #e9f3ee; padding: 16px; }
+.video-player video { width: 100%; aspect-ratio: 16 / 9; display: block; }
+.video-player p { padding: 8px; font-size: 13px; }
 .player-footer { display: flex; justify-content: space-between; align-items: center; padding: 13px 18px; font-size: 9px; color: var(--muted); }
 .player-footer .status-dot { width: 5px; height: 5px; margin-right: 5px; }
 .player-footer > span:last-child { font-size: 7px; letter-spacing: 1px; }

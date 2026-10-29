@@ -6,6 +6,8 @@ import { Icon } from "./icon";
 import type { ResolveResult } from "@/lib/providers/types";
 import { validateShareUrl } from "@/lib/share-url";
 import { isResolveResult } from "@/lib/providers/validate-result";
+import { workspacePlayback } from "@/lib/workspace-playback";
+import { VideoPlayer } from "./video-player";
 
 export function Workspace({ adsEnabled = false, providerMode = "mock" }: { adsEnabled?: boolean; providerMode?: "mock" | "official" | "invalid" }) {
   const demo = providerMode === "mock";
@@ -14,6 +16,7 @@ export function Workspace({ adsEnabled = false, providerMode = "mock" }: { adsEn
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ResolveResult | null>(null);
+  const playback = workspacePlayback(result);
   const [intent, setIntent] = useState<"watch" | "download">("watch");
   const output = useRef<HTMLElement>(null);
 
@@ -87,13 +90,13 @@ export function Workspace({ adsEnabled = false, providerMode = "mock" }: { adsEn
         <section ref={output} tabIndex={-1} className="workspace" aria-label="Share preview" aria-busy={loading}>
           <div className="player-card">
             <div className="panel-heading"><span className="tiny-label">THE VIEWING ROOM</span><span className="pill">{result ? "DEMO PREVIEW" : "READY WHEN YOU ARE"}</span></div>
-            <div className="player-placeholder">
+            {playback ? <VideoPlayer source={playback} title={result?.file.name} /> : <div className="player-placeholder">
               <div className="orbit orbit-one" /><div className="orbit orbit-two" />
               <span className="play-symbol"><Icon name="play" /></span>
               <h2>{loading ? "Reading your link…" : result ? "This is a demo, not your video" : "A little space for the big picture"}</h2>
               <p>{result ? result.stream.status === "verified" ? "Live playback is not enabled in this prototype." : result.stream.reason : "Your player preview will appear here."}</p>
               <span className="player-note">Live TeraBox playback has not been verified.</span>
-            </div>
+            </div>}
             <div className="player-footer"><span><span className="status-dot" /> {result ? "Mock data only" : "No media loaded"}</span><span>YOUR MEDIA STAYS YOURS</span></div>
           </div>
 
