@@ -11,7 +11,7 @@ The official adapter still raises `documentation_unverified`; provider DTO valid
 | Official docs `https://www.terabox.com/integrations/docs/indonesian` | HTTP 403 from CONNECT proxy, `server: envoy`; `curl: (56) CONNECT tunnel failed, response 403` |
 | Alternative discovery catalog `https://rapidapi.com/search/terabox` | Same proxy failure. A catalog is not an approved provider or proof of authorization |
 | Credential metadata | No configured secret bindings and no exported TERABOX_/TERASTREAM_ variable names during inspection; values never printed |
-| Operator-owned test share | Not supplied at assessment time; a public link alone does not establish operator permission |
+| Operator-owned test share | Operator supplied a public-share link in reply to the authorized-test request after the initial assessment. Its URL is deliberately not persisted; provider permission/ownership are not independently verified |
 | Endpoint contracts / schemas | Not obtained or verified; no endpoint adapter or schema invented |
 
 This is an environment-policy block before reaching either site, not evidence of an upstream API rejection or of the existence/absence of a permitted public-share API. Alternative providers have **not** been validated. No third-party resolver was called. The pre-existing documentation/API-domain draft requirements have not established active connectivity.
@@ -34,7 +34,7 @@ No credential names are guessed or supported until an API contract specifies the
 | Live requirement | Status |
 | --- | --- |
 | Official/alternative endpoint, auth, public-share permission, response schema | Blocked: documentation/contract |
-| Operator ownership and issued credential scopes | Blocked: operator inputs |
+| Operator test share / issued credential scopes | Share supplied for requested testing; credentials/scopes still unavailable |
 | Actual filename/file ID/MIME/expiry/HTTPS/CDN URL | Not probed |
 | Browser CORS, MP4 range/seeking, HLS playlists/segments | Not run |
 | Cookies/referer/hotlink requirements and URL expiry | Unknown; no cookies or spoofed referer attempted |
@@ -54,3 +54,5 @@ No credential names are guessed or supported until an API contract specifies the
 Unit tests cover blocked prerequisites, existing URL safety, permission confirmation, ignored endpoint/token injection and CLI redaction/non-success exit. Existing provider/player/security tests and production build are required; these remain offline/synthetic checks, not proof of TeraBox compatibility.
 
 Local result: `npm run check` passed lint, strict typecheck, **139 tests across nine suites** and production standalone build; `docker compose config --quiet` passed. Manual CLI invocation returned the documented redacted offline report with exit 2. No dependencies, production policies, deployment settings or live provider implementation changed. Browser Network live evidence remains **not run**.
+
+Operator update: a share was supplied during this task. It was not opened through undocumented APIs, persisted in the repository, or included in CLI output. The manual CLI example above used no process-environment share, so its missing-share result is not a claim that no link was provided in chat. The documentation/credential blockers remain; live Network tests are still not run.
