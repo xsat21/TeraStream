@@ -1,4 +1,6 @@
-import { mockProvider } from "@/lib/providers/mock";
+import { selectedProvider } from "@/lib/providers/config";
+import { ProviderError } from "@/lib/providers/errors";
+import { isResolveResult } from "@/lib/providers/validate-result";
 import { validateShareUrl } from "@/lib/share-url";
 import type { ResolveResult } from "@/lib/providers/types";
 
@@ -38,14 +40,19 @@ export async function POST(request: Request) {
     return Response.json({ error: (error as Error).message }, { status: 400, headers });
   }
   try {
-    const file = await mockProvider.getMetadata(url, request.signal);
+    const provider = selectedProvider();
+    const file = await provider.getMetadata(url, request.signal);
     const [stream, download] = await Promise.all([
-      mockProvider.getStreamingUrl(file, request.signal),
-      mockProvider.getDownloadUrl(file, request.signal),
+      provider.getStreamingUrl(file, request.signal),
+      provider.getDownloadUrl(file, request.signal),
     ]);
-    const result: ResolveResult = { provider: mockProvider.id, file, stream, download };
+    const result: ResolveResult = { provider: provider.id, file, stream, download };
+    if (!isResolveResult(result, provider.id as "mock" | "official")) throw new ProviderError("invalid_response");
     return Response.json(result, { headers });
-  } catch {
+  } catch (error) {
+    if (error instanceof ProviderError) {
+      return Response.json({ error: error.message, code: error.code }, { status: error.httpStatus, headers });
+    }
     return Response.json({ error: "The provider is unavailable. Please try again." }, { status: 502, headers });
   }
 }

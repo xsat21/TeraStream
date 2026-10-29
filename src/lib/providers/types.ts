@@ -7,6 +7,7 @@ export interface FileMetadata {
 }
 
 export type MediaLink =
+  | { status: "unsupported" | "unauthorized"; reason: string }
   | { status: "unavailable"; reason: string }
   | { status: "unverified"; reason: string }
   | { status: "verified"; url: string; expiresAt: string; verifiedAt: string };

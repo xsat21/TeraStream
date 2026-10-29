@@ -59,6 +59,9 @@ describe("metadata transport SSRF defense", () => {
     const [url, options] = vi.mocked(request).mock.calls[0];
     expect((url as URL).hostname).toBe("terabox.com");
     expect(options).toMatchObject({ agent: false, family: 4 });
+    expect(options).not.toHaveProperty("rejectUnauthorized", false);
+    expect(options).not.toHaveProperty("headers.Authorization");
+    expect(options).not.toHaveProperty("headers.Cookie");
     const callback = vi.fn();
     (options as { lookup: (...args: unknown[]) => void }).lookup("terabox.com", {}, callback);
     expect(callback).toHaveBeenCalledWith(null, "8.8.8.8", 4);
@@ -78,5 +81,17 @@ describe("metadata transport SSRF defense", () => {
     await vi.advanceTimersByTimeAsync(5000);
     await result;
     expect(request).not.toHaveBeenCalled();
+  });
+  it("bounds the request deadline after DNS resolves", async () => {
+    vi.useFakeTimers();
+    vi.mocked(lookup).mockResolvedValueOnce([{ address: "8.8.8.8", family: 4 }] as never);
+    const req = Object.assign(new EventEmitter(), { end: () => {
+      const options = vi.mocked(request).mock.calls[0][1] as { signal: AbortSignal };
+      options.signal.addEventListener("abort", () => req.emit("error", new Error("Request timed out")));
+    } });
+    vi.mocked(request).mockReturnValueOnce(req as never);
+    const result = expect(safeFetchShareText("https://terabox.com/s/demo")).rejects.toThrow("timed out");
+    await vi.advanceTimersByTimeAsync(5000);
+    await result;
   });
 });
