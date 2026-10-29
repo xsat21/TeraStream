@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:video-browser": "node tests/browser/run.mjs",
+    "probe:terabox": "node scripts/terabox-live-probe.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
