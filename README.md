@@ -6,6 +6,8 @@ An original, MIT-licensed, privacy-conscious foundation for a TeraBox public-sha
 
 ## Official integration status (Phase 2)
 
+For the current operator-owned live-probe assessment, offline CLI and exact missing prerequisites, see [PR #5 live-probe status](docs/terabox-live-probe.md). `npm run probe:terabox` intentionally exits 2 while no API contract is verified; it does not send metadata or video requests.
+
 This phase adds a **fail-closed official-provider boundary**, not a working TeraBox API integration. The official documentation request was rejected by this environment's egress proxy, and no issued TeraBox credentials or authorized test shares are available. No endpoint parameters, response schemas, OAuth workflow or public-share download permissions have been guessed. See [integration status and blockers](docs/terabox-integration-status.md).
 
 Set the server-only **runtime** variable `TERASTREAM_PROVIDER=mock` (default) for demo mode, or `TERASTREAM_PROVIDER=official` to select the blocked official adapter. With Docker Compose/Coolify, set that variable in the resource's runtime environment and recreate/redeploy the container; it is not an image build argument. The server-rendered page reads mode at request time. Unknown or empty values fail closed. The browser cannot select or override the provider using request fields.
