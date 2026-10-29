@@ -10,6 +10,7 @@ services:
       - "10.40.40.242:8082:3000"
     environment:
       NODE_ENV: production
+      TERASTREAM_PROVIDER: "${TERASTREAM_PROVIDER:-mock}"
       NEXT_TELEMETRY_DISABLED: "1"
       HOSTNAME: "0.0.0.0"
       PORT: "3000"

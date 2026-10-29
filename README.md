@@ -4,6 +4,18 @@ An original, MIT-licensed, privacy-conscious foundation for a TeraBox public-sha
 
 **Status: mock provider only.** The interface shows an explicitly labeled sample file for valid share links. It does not resolve real file information, play TeraBox videos, or download files. No live streaming tests have been performed; direct streaming is **not verified**. Watch and Download explore the intended workflow and explain the current limitation.
 
+## Official integration status (Phase 2)
+
+This phase adds a **fail-closed official-provider boundary**, not a working TeraBox API integration. The official documentation request was rejected by this environment's egress proxy, and no issued TeraBox credentials or authorized test shares are available. No endpoint parameters, response schemas, OAuth workflow or public-share download permissions have been guessed. See [integration status and blockers](docs/terabox-integration-status.md).
+
+Set the server-only **runtime** variable `TERASTREAM_PROVIDER=mock` (default) for demo mode, or `TERASTREAM_PROVIDER=official` to select the blocked official adapter. With Docker Compose/Coolify, set that variable in the resource's runtime environment and recreate/redeploy the container; it is not an image build argument. The server-rendered page reads mode at request time. Unknown or empty values fail closed. The browser cannot select or override the provider using request fields.
+
+In official mode, the page visibly reports that integration is not configured and `/api/resolve` returns **503** with code `documentation_unverified`. No sample filename, real metadata, streaming URL or download URL is returned. It does not contact TeraBox or fall back to mock. `/api/health` remains application liveness, not provider readiness. A newly selected official mode does not establish real API capability.
+
+No credential variables are supported yet: naming them or implementing token exchange/storage before reviewing the real authorization contract would invent requirements. Do not add cookies, client secrets, refresh/access tokens or API keys to `NEXT_PUBLIC_*`, Docker build args, Git or logs. There is no OAuth callback or token storage. A future authorization implementation must verify the official workflow, scope, expiry/refresh semantics, CSRF state, PKCE where applicable, safe server-side token storage and permitted content before enabling network requests.
+
+The internal provider DTO validator rejects malformed metadata, unsafe filenames, extra fields, mismatched mock/live provenance and all claimed verified media links. This is validation of **TeraStream's internal contract**, not validation of a documented TeraBox response schema. Playback/download controls stay placeholders, and the existing CSP (`media-src 'none'`), URL allowlist, SSRF transport and no-media-storage policy remain unchanged. Internal error categories distinguish unsupported, unauthorized, expired authorization, unavailable and unverified states; tests simulating those categories are not live authorization tests. Folders/multi-file shares cannot be resolved until their documented contracts are reviewed.
+
 ## Develop locally
 
 Use Node.js **24.19.0** (see `.nvmrc`; supported runtime is Node 24 >=24.15) and npm. No accounts, API credentials, database, or external services are needed.

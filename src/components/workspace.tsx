@@ -5,8 +5,10 @@ import Link from "next/link";
 import { Icon } from "./icon";
 import type { ResolveResult } from "@/lib/providers/types";
 import { validateShareUrl } from "@/lib/share-url";
+import { isResolveResult } from "@/lib/providers/validate-result";
 
-export function Workspace({ adsEnabled = false }: { adsEnabled?: boolean }) {
+export function Workspace({ adsEnabled = false, providerMode = "mock" }: { adsEnabled?: boolean; providerMode?: "mock" | "official" | "invalid" }) {
+  const demo = providerMode === "mock";
   const [url, setUrl] = useState("");
   const [theme, setTheme] = useState<"light" | "dark" | undefined>();
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,8 @@ export function Workspace({ adsEnabled = false }: { adsEnabled?: boolean }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Could not read this share. Please try again.");
-      setResult(data as ResolveResult);
+      if (providerMode === "invalid" || !isResolveResult(data, providerMode)) throw new Error("The provider returned an invalid or unverified response. No media was enabled.");
+      setResult(data);
       output.current?.focus();
     } catch (err) {
       setError(err instanceof Error && err.name === "TimeoutError" ? "The request timed out. Please try again." :
@@ -65,19 +68,20 @@ export function Workspace({ adsEnabled = false }: { adsEnabled?: boolean }) {
           <p className="hero-copy">A simpler space for your TeraBox shares.<br className="hidden sm:block" /> View file details, watch, and download — on your terms.</p>
 
           <form className="link-card" aria-label="Resolve a public share" onSubmit={(event) => { event.preventDefault(); void resolve("watch"); }}>
-            <div className="card-heading"><span className="step">01</span><label htmlFor="share-url">Start with a public-share link</label><span className="demo-badge">MOCK PROVIDER</span></div>
+            <div className="card-heading"><span className="step">01</span><label htmlFor="share-url">Start with a public-share link</label><span className="demo-badge">{demo ? "MOCK PROVIDER" : "OFFICIAL · NOT CONFIGURED"}</span></div>
             <div className="input-wrap"><span><Icon name="link" /></span><input id="share-url" name="share-url" type="url" required maxLength={2048} autoComplete="off" spellCheck={false} placeholder="https://www.terabox.com/s/…" value={url} onChange={(event) => { setUrl(event.target.value); setError(""); setResult(null); }} aria-describedby="share-hint share-feedback" aria-invalid={!!error} disabled={loading} /></div>
             <div className="form-actions">
               <button className="button button-primary" type="submit" disabled={loading}><Icon name="play" />{loading && intent === "watch" ? "Checking link…" : "Watch"}</button>
               <button className="button button-secondary" type="button" disabled={loading} onClick={() => void resolve("download")}><Icon name="download" />{loading && intent === "download" ? "Checking link…" : "Download"}</button>
             </div>
             <p id="share-hint" className="hint">Use only public content you own or are authorized to access.</p>
+            {!demo && <p className="feedback error" role="status">{providerMode === "invalid" ? "Invalid provider mode. Ask the administrator to set TERASTREAM_PROVIDER to mock or official." : "Official integration is not configured. API documentation and authorized access need verification; live metadata, playback and downloads are disabled."}</p>}
             <div id="share-feedback" aria-live="polite" aria-atomic="true">
-              {loading && <p className="feedback">Loading demo file information…</p>}
+              {loading && <p className="feedback">{demo ? "Loading demo file information…" : "Checking official provider configuration…"}</p>}
               {error && <p className="feedback error" role="alert">{error}</p>}
             </div>
           </form>
-          <p className="privacy-line"><span aria-hidden="true">◇</span> No media uploads. No account required. No tracking scripts.</p>
+          <p className="privacy-line"><span aria-hidden="true">◇</span> No media uploads. No tracking scripts.</p>
         </section>
 
         <section ref={output} tabIndex={-1} className="workspace" aria-label="Share preview" aria-busy={loading}>
@@ -97,11 +101,11 @@ export function Workspace({ adsEnabled = false }: { adsEnabled?: boolean }) {
             <div className="card-heading"><span className="step">02</span><h2 id="file-heading">File information</h2></div>
             <div className="file-icon"><Icon name="file" /></div>
             <h3>{result ? result.file.name : "Meet your next watch"}</h3>
-            <p className="file-description">{result ? "Illustrative fixture. These details do not describe the submitted share." : "Add a public-share link above to explore the demo workflow."}</p>
+            <p className="file-description">{result ? "Illustrative fixture. These details do not describe the submitted share." : demo ? "Add a public-share link above to explore the demo workflow." : "No live file information is available until authorized integration is configured."}</p>
             <dl className="file-details">
               <div><dt>File type</dt><dd>{result ? result.file.mimeType : "—"}</dd></div>
               <div><dt>File size</dt><dd>{result?.file.sizeBytes != null ? `${(result.file.sizeBytes / 1024 / 1024).toFixed(0)} MiB (sample)` : "—"}</dd></div>
-              <div><dt>Provider</dt><dd><span className="provider-dot" />Mock · demo only</dd></div>
+              <div><dt>Provider</dt><dd><span className="provider-dot" />{demo ? "Mock · demo only" : "Official · not configured"}</dd></div>
               <div><dt>Availability</dt><dd>Not verified</dd></div>
             </dl>
             <div className="info-note">{result && intent === "download" && result.download.status !== "verified" ? result.download.reason : "No live media is fetched, stored, or streamed in this prototype."}</div>

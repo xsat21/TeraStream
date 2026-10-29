@@ -11,6 +11,21 @@ const fixture = {
 };
 
 describe("share workspace", () => {
+  it("shows official configuration blocker with no sample metadata or player", () => {
+    const { container } = render(<Workspace providerMode="official" />);
+    expect(screen.getByRole("status").textContent).toContain("Official integration is not configured");
+    expect(screen.queryByText("MOCK PROVIDER")).toBeNull();
+    expect(container.textContent).not.toContain("Sample film.mp4");
+    expect(container.querySelector("video, iframe")).toBeNull();
+  });
+  it("rejects forged verified playback data without creating a video or download link", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ ...fixture, stream: { status: "verified", url: "https://evil.test/video" } })));
+    const { container } = render(<Workspace />);
+    fireEvent.change(screen.getByLabelText("Start with a public-share link"), { target: { value: "https://terabox.com/s/demo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Download" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("invalid or unverified");
+    expect(container.querySelector('video, iframe, a[href="https://evil.test/video"]')).toBeNull();
+  });
   it("keeps ads disabled and player inert by default", () => {
     const { container } = render(<Workspace />);
     expect(screen.getByLabelText("Advertising disabled")).toBeDefined();
