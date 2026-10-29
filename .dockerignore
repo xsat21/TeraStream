@@ -1,0 +1,27 @@
+# Allowlisted build context: local env, Git, node_modules, .next, tests,
+# documentation, editor files, caches and other local outputs never enter it.
+**
+!Dockerfile
+!package.json
+!package-lock.json
+!next.config.ts
+!tsconfig.json
+!postcss.config.mjs
+!LICENSE
+!src/
+!src/**
+!public/
+!public/**
+!scripts/
+!scripts/healthcheck.mjs
+# Still exclude accidental secrets/artifacts within allowlisted directories.
+**/.env*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.log
+**/*.test.*
+**/*.spec.*
+**/__tests__/**
+**/.DS_Store
