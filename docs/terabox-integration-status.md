@@ -1,5 +1,7 @@
 # Authorized TeraBox integration status
 
+The later [video playback foundation](video-playback.md) supplies a fixture-tested player component. It does not change this document's official API/CDN blockers, provider quarantine or live-integration status. Production still authorizes no media origins.
+
 Assessment date: 2026-10-29. Base: `origin/main` at `0789707` (includes Coolify deployment). No dependency changes, private APIs, session cookies, upstream media requests, credential persistence or media buffering were introduced.
 
 ## Official documentation evidence

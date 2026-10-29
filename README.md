@@ -18,6 +18,8 @@ The internal provider DTO validator rejects malformed metadata, unsafe filenames
 
 ## Develop locally
 
+The MP4/HLS player foundation is implemented and tested with project-owned synthetic fixtures. It does **not** enable TeraBox playback: the official adapter and provider response quarantine are unchanged, and the production media approval list is empty. See [player architecture, fixture contract and validation](docs/video-playback.md).
+
 Use Node.js **24.19.0** (see `.nvmrc`; supported runtime is Node 24 >=24.15) and npm. No accounts, API credentials, database, or external services are needed.
 
 ```sh
